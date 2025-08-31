@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  hotels Hotel[] @relation("HotelUsers")
+
+  @@map("users")
+}
+
+// Hotel model for multi-tenancy
+model Hotel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  address     String
+  city        String
+  country     String
+  phone       String?
+  email       String?
+  website     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users User[] @relation("HotelUsers")
+  rooms Room[]
+
+  @@map("hotels")
+}
+
+// Room model
+model Room {
+  id          String   @id @default(cuid())
+  number      String
+  type        RoomType
+  capacity    Int
+  price       Decimal
+  isAvailable Boolean  @default(true)
+  hotelId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  hotel     Hotel      @relation(fields: [hotelId], references: [id])
+  bookings  Booking[]
+
+  @@map("rooms")
+}
+
+// Booking model
+model Booking {
+  id         String        @id @default(cuid())
+  checkIn    DateTime
+  checkOut   DateTime
+  status     BookingStatus @default(PENDING)
+  totalPrice Decimal
+  guestName  String
+  guestEmail String
+  guestPhone String?
+  roomId     String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  // Relations
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@map("bookings")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  USER
+}
+
+enum RoomType {
+  SINGLE
+  DOUBLE
+  TRIPLE
+  SUITE
+  DELUXE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
